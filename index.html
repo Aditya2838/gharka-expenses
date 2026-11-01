@@ -71,6 +71,69 @@
 <div id="toast" class="toast hidden" role="status"></div>
 <script>
 /* Add your Supabase Project URL and publishable/anon key here. Never use service_role. */
+ const categoryColors = [
+  "#4F46E5", // Groceries - Indigo
+  "#F59E0B", // Food - Orange
+  "#10B981", // Transport - Green
+  "#EF4444", // Bills - Red
+  "#8B5CF6", // Shopping - Purple
+  "#EC4899", // Medical - Pink
+  "#06B6D4", // Education - Cyan
+  "#84CC16", // Household - Lime
+  "#F97316", // Entertainment - Orange
+  "#64748B"  // Other - Grey
+];
+
+if (chart) {
+  chart.destroy();
+  chart = null;
+}
+
+if (labels.length && window.Chart) {
+  chart = new Chart(document.getElementById("categoryChart"), {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: labels.map(category => cats[category]),
+        backgroundColor: labels.map(
+          (_, index) => categoryColors[index % categoryColors.length]
+        ),
+        hoverBackgroundColor: labels.map(
+          (_, index) => categoryColors[index % categoryColors.length]
+        ),
+        borderColor: "#FFFFFF",
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: "65%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            padding: 18,
+            font: {
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ": ₹" +
+                Number(context.raw).toLocaleString("en-IN");
+            }
+          }
+        }
+      }
+    }
+  });
+}
 const SUPABASE_URL = "https://dkeiyaecgnjogzpaqmja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_3Y9oPDNMC9cLAndhKbisxQ_QkoAr7-r";
 const configured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
