@@ -71,69 +71,6 @@
 <div id="toast" class="toast hidden" role="status"></div>
 <script>
 /* Add your Supabase Project URL and publishable/anon key here. Never use service_role. */
- const categoryColors = [
-  "#4F46E5", // Groceries - Indigo
-  "#F59E0B", // Food - Orange
-  "#10B981", // Transport - Green
-  "#EF4444", // Bills - Red
-  "#8B5CF6", // Shopping - Purple
-  "#EC4899", // Medical - Pink
-  "#06B6D4", // Education - Cyan
-  "#84CC16", // Household - Lime
-  "#F97316", // Entertainment - Orange
-  "#64748B"  // Other - Grey
-];
-
-if (chart) {
-  chart.destroy();
-  chart = null;
-}
-
-if (labels.length && window.Chart) {
-  chart = new Chart(document.getElementById("categoryChart"), {
-    type: "doughnut",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: labels.map(category => cats[category]),
-        backgroundColor: labels.map(
-          (_, index) => categoryColors[index % categoryColors.length]
-        ),
-        hoverBackgroundColor: labels.map(
-          (_, index) => categoryColors[index % categoryColors.length]
-        ),
-        borderColor: "#FFFFFF",
-        borderWidth: 3,
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: "65%",
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            usePointStyle: true,
-            padding: 18,
-            font: {
-              size: 12
-            }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return context.label + ": ₹" +
-                Number(context.raw).toLocaleString("en-IN");
-            }
-          }
-        }
-      }
-    }
-  });
-}
 const SUPABASE_URL = "https://dkeiyaecgnjogzpaqmja.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_3Y9oPDNMC9cLAndhKbisxQ_QkoAr7-r";
 const configured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
@@ -200,10 +137,50 @@ function render(){
   const totals={};monthly.forEach(e=>{const n=e.profiles?.display_name||"Member";totals[n]=(totals[n]||0)+Number(e.amount)});
   const grand=Object.values(totals).reduce((a,b)=>a+b,0);
   $("memberBreakdown").innerHTML=FAMILY_NAMES.map(n=>`<div class="member"><div><b>${n}</b><div class="bar"><i style="width:${grand?Math.min(100,(totals[n]||0)/grand*100):0}%"></i></div></div><b>${money(totals[n]||0)}</b></div>`).join("");
-  const cats={};monthly.forEach(e=>cats[e.category]=(cats[e.category]||0)+Number(e.amount));
-  const labels=Object.keys(cats);$("categoryFallback").textContent=labels.length?"":"No category expenses this month.";
+  const cats={};
+  monthly.forEach(e=>cats[e.category]=(cats[e.category]||0)+Number(e.amount));
+  const labels=Object.keys(cats);
+  $("categoryFallback").textContent=labels.length?"":"No category expenses this month.";
+
+  const categoryColors={
+    Groceries:"#4F46E5",
+    Food:"#F59E0B",
+    Transport:"#10B981",
+    Bills:"#EF4444",
+    Shopping:"#8B5CF6",
+    Medical:"#EC4899",
+    Education:"#06B6D4",
+    Household:"#84CC16",
+    Entertainment:"#F97316",
+    Other:"#64748B"
+  };
+
   if(chart){chart.destroy();chart=null;}
-  if(labels.length && window.Chart){chart=new Chart($("categoryChart"),{type:"doughnut",data:{labels,datasets:[{data:labels.map(k=>cats[k]),borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:"bottom"}}}});}
+  if(labels.length && window.Chart){
+    chart=new Chart($("categoryChart"),{
+      type:"doughnut",
+      data:{
+        labels,
+        datasets:[{
+          data:labels.map(category=>cats[category]),
+          backgroundColor:labels.map(category=>categoryColors[category]||"#94A3B8"),
+          hoverBackgroundColor:labels.map(category=>categoryColors[category]||"#94A3B8"),
+          borderColor:"#FFFFFF",
+          borderWidth:3,
+          hoverOffset:8
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true,
+        cutout:"65%",
+        plugins:{
+          legend:{position:"bottom",labels:{usePointStyle:true,padding:18,font:{size:12}}},
+          tooltip:{callbacks:{label:context=>context.label+": ₹"+Number(context.raw).toLocaleString("en-IN")}}
+        }
+      }
+    });
+  }
 }
 $("monthFilter").addEventListener("change",render);
 $("personFilter").addEventListener("change",render);
