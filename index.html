@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GharKa Expenses</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#172033;--muted:#718096;--line:#e6eaf1;--brand:#315fe8;--soft:#edf2ff;--green:#13845b;--red:#c0394b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Inter,system-ui,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 15px;background:var(--brand);color:white;font-weight:650}.secondary{background:#eef1f7;color:#27334a}.danger{background:#fff0f1;color:var(--red)}.hidden{display:none!important}.muted{color:var(--muted)}.app{max-width:1180px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{font-weight:850;font-size:23px;letter-spacing:-.7px}.brand span{color:var(--brand)}.panel,.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:0 5px 22px #263b6410}.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}.auth{width:min(440px,100%);background:white;padding:28px;border:1px solid var(--line);border-radius:22px;box-shadow:0 15px 50px #263b6415}.auth h1{margin:0 0 7px}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:13px;font-weight:700;color:#475569}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #dce2ec;border-radius:10px;background:white;color:var(--ink);outline-color:var(--brand)}.auth button{width:100%;margin-top:8px}.switch{margin-top:16px;text-align:center;font-size:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:17px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:25px;margin-top:8px;letter-spacing:-.6px}.layout{display:grid;grid-template-columns:1.35fr .85fr;gap:16px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h2{font-size:17px;margin:0}.filters{display:flex;gap:8px;flex-wrap:wrap}.filters select,.filters input{padding:9px;border:1px solid var(--line);border-radius:9px;background:white}.expense{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.expense:last-child{border:0}.emoji{width:42px;height:42px;display:grid;place-items:center;background:var(--soft);border-radius:13px;font-size:20px}.expense-info{flex:1;min-width:0}.expense-info b{display:block}.expense-info small{color:var(--muted)}.amount{font-weight:750;white-space:nowrap}.actions{display:flex;gap:5px;margin-left:6px}.actions button{padding:7px 9px;font-size:12px}.member{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.member:last-child{border:0}.bar{height:7px;background:#edf0f6;border-radius:10px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--brand);border-radius:10px}.modal{position:fixed;inset:0;background:#10182780;display:grid;place-items:center;padding:16px;z-index:5}.modal-card{width:min(520px,100%);max-height:92vh;overflow:auto;background:white;border-radius:20px;padding:22px}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0}.modal-head button{padding:7px 10px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.full{grid-column:1/-1}.empty{text-align:center;color:var(--muted);padding:30px 10px}.notice{padding:11px 13px;border-radius:10px;background:#fff7e6;color:#805500;font-size:13px;margin:12px 0}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#18243a;color:white;padding:12px 18px;border-radius:12px;z-index:10;box-shadow:0 5px 25px #0002}.tabrow{display:flex;gap:8px;margin-bottom:15px}.tabrow button{background:#e9edf6;color:#42506a}.tabrow button.active{background:var(--brand);color:white}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:520px){.app{padding:14px}.top{align-items:flex-start}.brand{font-size:20px}.stat{padding:14px}.stat strong{font-size:21px}.panel{padding:15px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.filters{width:100%}.filters>*{flex:1;min-width:0}}
+</style>
+</head>
+<body>
+<div id="authView" class="auth-wrap">
+ <div class="auth">
+  <div class="brand">GharKa <span>Expenses</span></div>
+  <p class="muted">One simple place for your family's daily spending.</p>
+  <div id="authNotice" class="notice hidden"></div>
+  <div class="tabrow"><button id="loginTab" class="active" type="button">Log in</button><button id="signupTab" type="button">Create account</button></div>
+  <form id="authForm">
+   <div id="nameField" class="field hidden"><label>Your family name</label><select id="displayName"><option>Aditya</option><option>Mom</option><option>Dad</option><option>Bhavana</option></select></div>
+   <div id="inviteField" class="field hidden"><label>Family invite code</label><input id="inviteCode" autocomplete="off" placeholder="Enter your invite code"></div>
+   <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
+   <div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div>
+   <button id="authSubmit">Log in</button>
+  </form>
+  <p class="switch muted">Only invited family members can create an account.</p>
+ </div>
+</div>
+<div id="appView" class="hidden">
+ <main class="app">
+  <header class="top"><div><div class="brand">GharKa <span>Expenses</span></div><div class="muted" id="welcome">Family expense overview</div></div><div style="display:flex;gap:8px"><button id="addBtn">＋ Add expense</button><button id="logoutBtn" class="secondary">Log out</button></div></header>
+  <section class="stats">
+   <div class="stat"><small>Family spending · this month</small><strong id="monthTotal">₹0</strong></div>
+   <div class="stat"><small>Today's spending</small><strong id="todayTotal">₹0</strong></div>
+   <div class="stat"><small>Your spending · this month</small><strong id="myTotal">₹0</strong></div>
+   <div class="stat"><small>Number of entries</small><strong id="entryCount">0</strong></div>
+  </section>
+  <div class="layout">
+   <section class="panel">
+    <div class="section-head"><h2>Family expenses</h2><div class="filters"><select id="monthFilter"><option value="current">This month</option><option value="all">All time</option></select><select id="personFilter"><option value="all">Everyone</option><option>Aditya</option><option>Mom</option><option>Dad</option><option>Bhavana</option></select></div></div>
+    <div id="expenseList"></div>
+   </section>
+   <aside style="display:grid;gap:16px;align-content:start">
+    <section class="panel"><div class="section-head"><h2>Spending by member</h2></div><div id="memberBreakdown"></div></section>
+    <section class="panel"><div class="section-head"><h2>Category breakdown</h2></div><canvas id="categoryChart" height="210"></canvas><div id="categoryFallback" class="muted"></div></section>
+   </aside>
+  </div>
+ </main>
+</div>
+<div id="expenseModal" class="modal hidden">
+ <div class="modal-card"><div class="modal-head"><h2 id="modalTitle">Add expense</h2><button class="secondary" id="closeModal">✕</button></div>
+  <form id="expenseForm">
+   <div class="form-grid">
+    <div class="field full"><label>What did you buy?</label><input id="item" required maxlength="100" placeholder="e.g. Vegetables, petrol, electricity bill"></div>
+    <div class="field"><label>Amount (₹)</label><input id="amount" type="number" required min="0.01" max="10000000" step="0.01" placeholder="0.00"></div>
+    <div class="field"><label>Category</label><select id="category"><option>Groceries</option><option>Food</option><option>Transport</option><option>Bills</option><option>Shopping</option><option>Medical</option><option>Education</option><option>Household</option><option>Entertainment</option><option>Other</option></select></div>
+    <div class="field"><label>Date</label><input id="expenseDate" type="date" required></div>
+    <div class="field"><label>Payment method</label><select id="payment"><option>UPI</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></div>
+    <div class="field full"><label>Notes (optional)</label><textarea id="notes" rows="2" maxlength="300" placeholder="Any extra details"></textarea></div>
+   </div>
+   <button id="saveExpense" style="width:100%;margin-top:8px">Save expense</button>
+  </form>
+ </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script>
+const SUPABASE_URL = "https://dkeiyaecgnjogzpaqmja.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_3Y9oPDNMC9cLAndhKbisxQ_QkoAr7-r";
+const configured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const $ = id => document.getElementById(id);
+let currentUser=null, profile=null, expenses=[], editingId=null, chart=null, authMode="login";
+const money = n => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(n||0));
+const today = () => {const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const monthStart = () => today().slice(0,7)+"-01";
+const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const icons={Groceries:"🛒",Food:"🍽️",Transport:"🚗",Bills:"🧾",Shopping:"🛍️",Medical:"💊",Education:"📚",Household:"🏠",Entertainment:"🎬",Other:"💸"};
+function toast(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),2800)}
+function authMessage(msg){$("authNotice").textContent=msg;$("authNotice").classList.remove("hidden")}
+function setAuthMode(mode){authMode=mode;$("loginTab").classList.toggle("active",mode==="login");$("signupTab").classList.toggle("active",mode==="signup");$("nameField").classList.toggle("hidden",mode!=="signup");$("inviteField").classList.toggle("hidden",mode!=="signup");$("authSubmit").textContent=mode==="login"?"Log in":"Create account";$("password").autocomplete=mode==="login"?"current-password":"new-password";$("authNotice").classList.add("hidden")}
+$("loginTab").onclick=()=>setAuthMode("login");$("signupTab").onclick=()=>setAuthMode("signup");
+async function loadProfile(){const {data,error}=await db.from("profiles").select("id,display_name,family_id").eq("id",currentUser.id).single();if(error)throw error;profile=data}
+async function showApp(){await loadProfile();$("authView").classList.add("hidden");$("appView").classList.remove("hidden");$("welcome").textContent=`Hello, ${profile.display_name} · Family overview`;await loadExpenses()}
+async function loadExpenses(){const {data,error}=await db.from("expenses").select("id,item,amount,category,expense_date,payment_method,notes,created_by,profiles!expenses_created_by_fkey(display_name)").order("expense_date",{ascending:false}).order("created_at",{ascending:false}).limit(1000);if(error)throw error;expenses=data||[];render()}
+function render(){const now=today(),month=now.slice(0,7),monthly=expenses.filter(e=>e.expense_date.startsWith(month)),daily=expenses.filter(e=>e.expense_date===now);$("monthTotal").textContent=money(monthly.reduce((s,e)=>s+Number(e.amount),0));$("todayTotal").textContent=money(daily.reduce((s,e)=>s+Number(e.amount),0));$("myTotal").textContent=money(monthly.filter(e=>e.created_by===currentUser.id).reduce((s,e)=>s+Number(e.amount),0));$("entryCount").textContent=monthly.length;
+const selectedMonth=$("monthFilter").value,person=$("personFilter").value;let shown=expenses.filter(e=>(selectedMonth==="all"||e.expense_date.startsWith(month))&&(person==="all"||e.profiles?.display_name===person));
+$("expenseList").innerHTML=shown.length?shown.map(e=>`<div class="expense"><div class="emoji">${icons[e.category]||"💸"}</div><div class="expense-info"><b>${escapeHtml(e.item)}</b><small>${escapeHtml(e.profiles?.display_name||"Family member")} · ${new Date(e.expense_date+"T00:00:00").toLocaleDateString("en-IN")} · ${escapeHtml(e.category)} · ${escapeHtml(e.payment_method)}</small>${e.notes?`<small>${escapeHtml(e.notes)}</small>`:""}</div><div class="amount">${money(e.amount)}</div>${e.created_by===currentUser.id?`<div class="actions"><button class="secondary" data-edit="${e.id}">Edit</button><button class="danger" data-delete="${e.id}">Delete</button></div>`:""}</div>`).join(""):`<div class="empty">No expenses found for this filter.</div>`;
+$("expenseList").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));$("expenseList").querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deleteExpense(b.dataset.delete));
+const totals={};monthly.forEach(e=>{const n=e.profiles?.display_name||"Member";totals[n]=(totals[n]||0)+Number(e.amount)});const grand=Object.values(totals).reduce((a,b)=>a+b,0);$("memberBreakdown").innerHTML=["Aditya","Mom","Dad","Bhavana"].map(n=>`<div class="member"><div style="flex:1"><b>${n}</b><div class="bar"><i style="width:${grand?totals[n]/grand*100:0}%"></i></div></div><b>${money(totals[n]||0)}</b></div>`).join("");
+const cats={};monthly.forEach(e=>cats[e.category]=(cats[e.category]||0)+Number(e.amount));const labels=Object.keys(cats);$("categoryFallback").textContent=labels.length?"":"No category expenses this month.";if(chart)chart.destroy();if(labels.length)chart=new Chart($("categoryChart"),{type:"doughnut",data:{labels,datasets:[{data:labels.map(k=>cats[k]),borderWidth:2,borderColor:"#fff"}]},options:{plugins:{legend:{position:"bottom"}}}});
+}
+$("monthFilter").onchange=render;$("personFilter").onchange=render;
+function openAdd(){editingId=null;$("expenseForm").reset();$("modalTitle").textContent="Add expense";$("saveExpense").textContent="Save expense";$("expenseDate").value=today();$("expenseModal").classList.remove("hidden")}
+function openEdit(id){const e=expenses.find(x=>x.id===id);if(!e)return;editingId=id;$("modalTitle").textContent="Edit expense";$("saveExpense").textContent="Update expense";$("item").value=e.item;$("amount").value=e.amount;$("category").value=e.category;$("expenseDate").value=e.expense_date;$("payment").value=e.payment_method;$("notes").value=e.notes||"";$("expenseModal").classList.remove("hidden")}
+$("addBtn").onclick=openAdd;$("closeModal").onclick=()=>$("expenseModal").classList.add("hidden");$("expenseModal").onclick=e=>{if(e.target===$("expenseModal"))$("expenseModal").classList.add("hidden")};
+$("expenseForm").onsubmit=async e=>{e.preventDefault();const payload={item:$("item").value.trim(),amount:Number($("amount").value),category:$("category").value,expense_date:$("expenseDate").value,payment_method:$("payment").value,notes:$("notes").value.trim()||null};if(!payload.item||!Number.isFinite(payload.amount)||payload.amount<=0)return toast("Enter a valid item and amount.");if(payload.expense_date>today())return toast("Future-dated expenses are not allowed.");$("saveExpense").disabled=true;try{const result=editingId?await db.from("expenses").update(payload).eq("id",editingId):await db.from("expenses").insert(payload);if(result.error)throw result.error;$("expenseModal").classList.add("hidden");toast(editingId?"Expense updated":"Expense added");await loadExpenses()}catch(err){toast(err.message||"Could not save expense")}finally{$("saveExpense").disabled=false}};
+async function deleteExpense(id){if(!confirm("Delete this expense? This cannot be undone."))return;const {error}=await db.from("expenses").delete().eq("id",id);if(error)return toast(error.message);toast("Expense deleted");await loadExpenses()}
+$("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;profile=null;$("appView").classList.add("hidden");$("authView").classList.remove("hidden")};
+$("authForm").onsubmit=async e=>{e.preventDefault();if(!configured)return authMessage("Add your Supabase URL and publishable/anon key in index.html first.");$("authSubmit").disabled=true;try{const email=$("email").value.trim(),password=$("password").value;if(authMode==="login"){const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;currentUser=data.user;await showApp()}else{const {data,error}=await db.auth.signUp({email,password,options:{data:{display_name:$("displayName").value,invite_code:$("inviteCode").value.trim()}}});if(error)throw error;if(data.session){currentUser=data.user;await showApp()}else authMessage("Account created. Check your email to confirm, then log in.")}}catch(err){authMessage(err.message||"Authentication failed.")}finally{$("authSubmit").disabled=false}};
+async function init(){if(!configured){authMessage("Setup needed: add your Supabase Project URL and publishable/anon key in index.html. Then run schema.sql in Supabase SQL Editor.");return}const {data:{session}}=await db.auth.getSession();if(session){currentUser=session.user;try{await showApp()}catch(e){authMessage("Your family profile is not ready: "+e.message);$("authView").classList.remove("hidden")}}db.auth.onAuthStateChange(async(_event,session)=>{if(session&&!currentUser){currentUser=session.user;try{await showApp()}catch(e){authMessage(e.message)}}});}
+init();
+</script>
+</body></html>
