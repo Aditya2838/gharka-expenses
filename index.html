@@ -15,18 +15,14 @@
 <div id="authView" class="auth-wrap">
  <div class="auth">
   <div class="brand">GharKa <span>Expenses</span></div>
-  <p class="muted">One simple place for your family's daily spending.</p>
+  <p class="muted">Sign in to view and manage your family's expenses.</p>
   <div id="authNotice" class="notice hidden"></div>
-  <div class="tabrow"><button id="loginTab" class="active" type="button">Log in</button><button id="signupTab" type="button">Create account</button></div>
   <form id="authForm">
-   <div id="nameField" class="field hidden"><label>Your family name</label><select id="displayName"><option>Aditya</option><option>Mom</option><option>Dad</option><option>Bhavana</option></select></div>
-   <div id="inviteField" class="field hidden"><label>Family invite code</label><input id="inviteCode" autocomplete="off" placeholder="Enter your invite code"></div>
-   <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
-   <div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div>
+   <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="username" placeholder="you@example.com"></div>
+   <div class="field"><label>Password</label><input id="password" type="password" required autocomplete="current-password" placeholder="Your password"></div>
    <button id="authSubmit">Log in</button>
   </form>
-  <p class="switch muted">Only invited family members can create an account.</p>
- </div>
+  <p class="switch muted">Private family access · Accounts are created by the family administrator.</p> </div>
 </div>
 <div id="appView" class="hidden">
  <main class="app">
@@ -71,7 +67,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_3Y9oPDNMC9cLAndhKbisxQ_QkoAr7-r";
 const configured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
 const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const $ = id => document.getElementById(id);
-let currentUser=null, profile=null, expenses=[], editingId=null, chart=null, authMode="login";
+let currentUser=null, profile=null, expenses=[], editingId=null, chart=null;
 const money = n => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(n||0));
 const today = () => {const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const monthStart = () => today().slice(0,7)+"-01";
@@ -79,8 +75,6 @@ const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
 const icons={Groceries:"🛒",Food:"🍽️",Transport:"🚗",Bills:"🧾",Shopping:"🛍️",Medical:"💊",Education:"📚",Household:"🏠",Entertainment:"🎬",Other:"💸"};
 function toast(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),2800)}
 function authMessage(msg){$("authNotice").textContent=msg;$("authNotice").classList.remove("hidden")}
-function setAuthMode(mode){authMode=mode;$("loginTab").classList.toggle("active",mode==="login");$("signupTab").classList.toggle("active",mode==="signup");$("nameField").classList.toggle("hidden",mode!=="signup");$("inviteField").classList.toggle("hidden",mode!=="signup");$("authSubmit").textContent=mode==="login"?"Log in":"Create account";$("password").autocomplete=mode==="login"?"current-password":"new-password";$("authNotice").classList.add("hidden")}
-$("loginTab").onclick=()=>setAuthMode("login");$("signupTab").onclick=()=>setAuthMode("signup");
 async function loadProfile(){const {data,error}=await db.from("profiles").select("id,display_name,family_id").eq("id",currentUser.id).single();if(error)throw error;profile=data}
 async function showApp(){await loadProfile();$("authView").classList.add("hidden");$("appView").classList.remove("hidden");$("welcome").textContent=`Hello, ${profile.display_name} · Family overview`;await loadExpenses()}
 async function loadExpenses(){const {data,error}=await db.from("expenses").select("id,item,amount,category,expense_date,payment_method,notes,created_by,profiles!expenses_created_by_fkey(display_name)").order("expense_date",{ascending:false}).order("created_at",{ascending:false}).limit(1000);if(error)throw error;expenses=data||[];render()}
@@ -98,7 +92,7 @@ $("addBtn").onclick=openAdd;$("closeModal").onclick=()=>$("expenseModal").classL
 $("expenseForm").onsubmit=async e=>{e.preventDefault();const payload={item:$("item").value.trim(),amount:Number($("amount").value),category:$("category").value,expense_date:$("expenseDate").value,payment_method:$("payment").value,notes:$("notes").value.trim()||null};if(!payload.item||!Number.isFinite(payload.amount)||payload.amount<=0)return toast("Enter a valid item and amount.");if(payload.expense_date>today())return toast("Future-dated expenses are not allowed.");$("saveExpense").disabled=true;try{const result=editingId?await db.from("expenses").update(payload).eq("id",editingId):await db.from("expenses").insert(payload);if(result.error)throw result.error;$("expenseModal").classList.add("hidden");toast(editingId?"Expense updated":"Expense added");await loadExpenses()}catch(err){toast(err.message||"Could not save expense")}finally{$("saveExpense").disabled=false}};
 async function deleteExpense(id){if(!confirm("Delete this expense? This cannot be undone."))return;const {error}=await db.from("expenses").delete().eq("id",id);if(error)return toast(error.message);toast("Expense deleted");await loadExpenses()}
 $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;profile=null;$("appView").classList.add("hidden");$("authView").classList.remove("hidden")};
-$("authForm").onsubmit=async e=>{e.preventDefault();if(!configured)return authMessage("Add your Supabase URL and publishable/anon key in index.html first.");$("authSubmit").disabled=true;try{const email=$("email").value.trim(),password=$("password").value;if(authMode==="login"){const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;currentUser=data.user;await showApp()}else{const {data,error}=await db.auth.signUp({email,password,options:{data:{display_name:$("displayName").value,invite_code:$("inviteCode").value.trim()}}});if(error)throw error;if(data.session){currentUser=data.user;await showApp()}else authMessage("Account created. Check your email to confirm, then log in.")}}catch(err){authMessage(err.message||"Authentication failed.")}finally{$("authSubmit").disabled=false}};
+$("authForm").onsubmit=async e=>{e.preventDefault();if(!configured)return authMessage("Add your Supabase URL and publishable/anon key in index.html first.");$("authSubmit").disabled=true;try{const {data,error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)throw error;currentUser=data.user;await showApp()}catch(err){authMessage(err.message||"Login failed. Check your email and password.")}finally{$("authSubmit").disabled=false}};
 async function init(){if(!configured){authMessage("Setup needed: add your Supabase Project URL and publishable/anon key in index.html. Then run schema.sql in Supabase SQL Editor.");return}const {data:{session}}=await db.auth.getSession();if(session){currentUser=session.user;try{await showApp()}catch(e){authMessage("Your family profile is not ready: "+e.message);$("authView").classList.remove("hidden")}}db.auth.onAuthStateChange(async(_event,session)=>{if(session&&!currentUser){currentUser=session.user;try{await showApp()}catch(e){authMessage(e.message)}}});}
 init();
 </script>
